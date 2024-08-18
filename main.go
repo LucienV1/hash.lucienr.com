@@ -1,13 +1,12 @@
 package main
 
 import (
-	"crypto/md2"
 	"crypto/md5"
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/hex"
-	"flags"
+	"flag"
 	"hash"
 	"hash/adler32"
 	"hash/crc32"
@@ -15,18 +14,20 @@ import (
 	"hash/fnv"
 	"net/http"
 	"strings"
+	"io"
 
 	"github.com/attilabuti/go-snefru"
 	"github.com/cxmcc/tiger"
 	"github.com/ddulesov/gogost/gost34112012256"
 	"github.com/ddulesov/gogost/gost34112012512"
 
-	// "github.com/htruong/go-md2"
+	"github.com/htruong/go-md2"
 	"github.com/jzelinskie/whirlpool"
 	"github.com/maoxs2/go-ripemd"
 	blake "github.com/pedroalbanese/blake256"
 	"golang.org/x/crypto/md4"
 	"golang.org/x/crypto/sha3"
+	b512 "github.com/dchest/blake512"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -51,110 +52,110 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		} else if strings.HasPrefix(r.URL.Path, "/sha1") {
 			hashing(w, r, sha1.New(), len("/sha1/"))
 			return
-		} else if strings.HasPrefix(r.URL.Path, "/sha224") || strings.HasPrefix(r.URL.Path, "/sha2_224") || strings.HasPrefix(r.URL.Path, "/sha2-224") {
+				} else if strings.HasPrefix(r.URL.Path, "/sha224") || strings.HasPrefix(r.URL.Path, "/sha2_224") || strings.HasPrefix(r.URL.Path, "/sha2-224") {
 			hashing(w, r, sha256.New224(), len("/sha224/"))
 			return
-		} else if r.URL.Path == "/sha256" || r.URL.Path == "/sha2_256" || r.URL.Path == "/sha2-256" {
-			hashing(w, r, sha256.New())
+		} else if strings.HasPrefix(r.URL.Path, "/sha256") || strings.HasPrefix(r.URL.Path, "/sha2_256") || strings.HasPrefix(r.URL.Path, "/sha2-256") {
+			hashing(w, r, sha256.New(), len("/sha256/"))
 			return
-		} else if r.URL.Path == "/sha384" || r.URL.Path == "/sha2_384" || r.URL.Path == "/sha2-384" {
-			hashing(w, r, sha512.New384())
+		} else if strings.HasPrefix(r.URL.Path, "/sha384") || strings.HasPrefix(r.URL.Path, "/sha2_384") || strings.HasPrefix(r.URL.Path, "/sha2-384") {
+			hashing(w, r, sha512.New384(), len("/sha384/"))
 			return
-		} else if r.URL.Path == "/sha512" || r.URL.Path == "/sha2_512" || r.URL.Path == "/sha2-512" {
-			hashing(w, r, sha512.New())
+		} else if strings.HasPrefix(r.URL.Path, "/sha512") || strings.HasPrefix(r.URL.Path, "/sha2_512") || strings.HasPrefix(r.URL.Path, "/sha2-512") {
+			hashing(w, r, sha512.New(), len("/sha512/"))
 			return
-		} else if r.URL.Path == "/sha512_224" || r.URL.Path == "/sha2_512_224" || r.URL.Path == "/sha2-512-224" {
-			hashing(w, r, sha512.New512_224())
+		} else if strings.HasPrefix(r.URL.Path, "/sha512_224") || strings.HasPrefix(r.URL.Path, "/sha2_512_224") || strings.HasPrefix(r.URL.Path, "/sha2-512-224") {
+			hashing(w, r, sha512.New512_224(), len("/sha512_224/"))
 			return
-		} else if r.URL.Path == "/sha512_256" || r.URL.Path == "/sha2_512_256" || r.URL.Path == "/sha2-512-256" {
-			hashing(w, r, sha512.New512_256())
+		} else if strings.HasPrefix(r.URL.Path, "/sha512_256") || strings.HasPrefix(r.URL.Path, "/sha2_512_256") || strings.HasPrefix(r.URL.Path, "/sha2-512-256") {
+			hashing(w, r, sha512.New512_256(), len("/sha512_256/"))
 			return
-		} else if r.URL.Path == "/sha3_224" || r.URL.Path == "/sha3-224" {
-			hashing(w, r, sha3.New224())
+		} else if strings.HasPrefix(r.URL.Path, "/sha3_224") || strings.HasPrefix(r.URL.Path, "/sha3-224") {
+			hashing(w, r, sha3.New224(), len("/sha3_224/"))
 			return
-		} else if r.URL.Path == "/sha3_256" || r.URL.Path == "/sha3-256" {
-			hashing(w, r, sha3.New256())
+		} else if strings.HasPrefix(r.URL.Path, "/sha3_256") || strings.HasPrefix(r.URL.Path, "/sha3-256") {
+			hashing(w, r, sha3.New256(), len("/sha3_256/"))
 			return
-		} else if r.URL.Path == "/sha3_384" || r.URL.Path == "/sha3-384" {
-			hashing(w, r, sha3.New384())
+		} else if strings.HasPrefix(r.URL.Path, "/sha3_384") || strings.HasPrefix(r.URL.Path, "/sha3-384") {
+			hashing(w, r, sha3.New384(), len("/sha3_384/"))
 			return
-		} else if r.URL.Path == "/sha3_512" || r.URL.Path == "/sha3-512" {
-			hashing(w, r, sha3.New512())
+		} else if strings.HasPrefix(r.URL.Path, "/sha3_512") || strings.HasPrefix(r.URL.Path, "/sha3-512") {
+			hashing(w, r, sha3.New512(), len("/sha3_512/"))
 			return
-		} else if r.URL.Path == "/sha3_shake128" || r.URL.Path == "/sha3-shake128" {
-			hashing(w, r, sha3.NewShake128())
+		} else if strings.HasPrefix(r.URL.Path, "/sha3_shake128") || strings.HasPrefix(r.URL.Path, "/sha3-shake128") {
+			hashing(w, r, sha3.NewShake128(), len("/sha3_shake128/"))
 			return
-		} else if r.URL.Path == "/sha3_shake256" || r.URL.Path == "/sha3-shake256" {
-			hashing(w, r, sha3.NewShake256())
+		} else if strings.HasPrefix(r.URL.Path, "/sha3_shake256") || strings.HasPrefix(r.URL.Path, "/sha3-shake256") {
+			hashing(w, r, sha3.NewShake256(), len("/sha3_shake256/"))
 			return
-		} else if r.URL.Path == "/adler32" {
-			hashing(w, r, adler32.New())
+		} else if strings.HasPrefix(r.URL.Path, "/adler32") {
+			hashing(w, r, adler32.New(), len("/adler32/"))
 			return
-		} else if r.URL.Path == "/crc32" {
-			hashing(w, r, crc32.NewIEEE())
+		} else if strings.HasPrefix(r.URL.Path, "/crc32") {
+			hashing(w, r, crc32.NewIEEE(), len("/crc32/"))
 			return
-		} else if r.URL.Path == "/crc64_iso" {
-			hashing(w, r, crc64.New(crc64.MakeTable(crc64.ISO)))
+		} else if strings.HasPrefix(r.URL.Path, "/crc64_iso") {
+			hashing(w, r, crc64.New(crc64.MakeTable(crc64.ISO)), len("/crc64_iso/"))
 			return
-		} else if r.URL.Path == "/crc64_ecma" {
-			hashing(w, r, crc64.New(crc64.MakeTable(crc64.ECMA)))
+		} else if strings.HasPrefix(r.URL.Path, "/crc64_ecma") {
+			hashing(w, r, crc64.New(crc64.MakeTable(crc64.ECMA)), len("/crc64_ecma/"))
 			return
-		} else if r.URL.Path == "/fnv32" {
-			hashing(w, r, fnv.New32())
+		} else if strings.HasPrefix(r.URL.Path, "/fnv32") {
+			hashing(w, r, fnv.New32(), len("/fnv32/"))
 			return
-		} else if r.URL.Path == "/fnv32a" {
-			hashing(w, r, fnv.New32a())
+		} else if strings.HasPrefix(r.URL.Path, "/fnv32a") {
+			hashing(w, r, fnv.New32a(), len("/fnv32a/"))
 			return
-		} else if r.URL.Path == "/fnv64" {
-			hashing(w, r, fnv.New64())
+		} else if strings.HasPrefix(r.URL.Path, "/fnv64") {
+			hashing(w, r, fnv.New64(), len("/fnv64/"))
 			return
-		} else if r.URL.Path == "/fnv64a" {
-			hashing(w, r, fnv.New64a())
+		} else if strings.HasPrefix(r.URL.Path, "/fnv64a") {
+			hashing(w, r, fnv.New64a(), len("/fnv64a/"))
 			return
-		} else if r.URL.Path == "/tiger" {
-			hashing(w, r, tiger.New())
+		} else if strings.HasPrefix(r.URL.Path, "/tiger") {
+			hashing(w, r, tiger.New(), len("/tiger/"))
 			return
-		} else if r.URL.Path == "/tiger2" {
-			hashing(w, r, tiger.New2())
+		} else if strings.HasPrefix(r.URL.Path, "/tiger2") {
+			hashing(w, r, tiger.New2(), len("/tiger2/"))
 			return
-		} else if r.URL.Path == "/whirlpool" {
-			hashing(w, r, whirlpool.New())
+		} else if strings.HasPrefix(r.URL.Path, "/whirlpool") {
+			hashing(w, r, whirlpool.New(), len("/whirlpool/"))
 			return
-		} else if r.URL.Path == "/gost34112012256" || r.URL.Path == "/gost3411-2012-256" || r.URL.Path == "gost256" {
-			hashing(w, r, gost34112012256.New())
+		} else if strings.HasPrefix(r.URL.Path, "/gost34112012256") || strings.HasPrefix(r.URL.Path, "/gost3411-2012-256") || strings.HasPrefix(r.URL.Path, "/gost256") {
+			hashing(w, r, gost34112012256.New(), len("/gost34112012256/"))
 			return
-		} else if r.URL.Path == "/gost34112012512" || r.URL.Path == "/gost3411-2012-512" || r.URL.Path == "gost512" {
-			hashing(w, r, gost34112012512.New())
+		} else if strings.HasPrefix(r.URL.Path, "/gost34112012512") || strings.HasPrefix(r.URL.Path, "/gost3411-2012-512") || strings.HasPrefix(r.URL.Path, "/gost512") {
+			hashing(w, r, gost34112012512.New(), len("/gost34112012512/"))
 			return
-		} else if r.URL.Path == "/snefru256" || r.URL.Path == "/snefru-256" || r.URL.Path == "/snefru_256" {
-			hashing(w, r, snefru.NewSnefru256(16))
+		} else if strings.HasPrefix(r.URL.Path, "/snefru256") || strings.HasPrefix(r.URL.Path, "/snefru-256") || strings.HasPrefix(r.URL.Path, "/snefru_256") {
+			hashing(w, r, snefru.NewSnefru256(16), len("/snefru256/"))
 			return
-		} else if r.URL.Path == "/snefru128" || r.URL.Path == "/snefru-128" || r.URL.Path == "/snefru_128" {
-			hashing(w, r, snefru.NewSnefru128(16))
+		} else if strings.HasPrefix(r.URL.Path, "/snefru128") || strings.HasPrefix(r.URL.Path, "/snefru-128") || strings.HasPrefix(r.URL.Path, "/snefru_128") {
+			hashing(w, r, snefru.NewSnefru128(16), len("/snefru128/"))
 			return
-		} else if r.URL.Path == "/ripemd128" || r.URL.Path == "/ripemd-128" || r.URL.Path == "/ripemd_128" {
-			hashing(w, r, ripemd.New128())
+		} else if strings.HasPrefix(r.URL.Path, "/ripemd128") || strings.HasPrefix(r.URL.Path, "/ripemd-128") || strings.HasPrefix(r.URL.Path, "/ripemd_128") {
+			hashing(w, r, ripemd.New128(), len("/ripemd128/"))
 			return
-		} else if r.URL.Path == "/ripemd160" || r.URL.Path == "/ripemd-160" || r.URL.Path == "/ripemd_160" {
-			hashing(w, r, ripemd.New160())
+		} else if strings.HasPrefix(r.URL.Path, "/ripemd160") || strings.HasPrefix(r.URL.Path, "/ripemd-160") || strings.HasPrefix(r.URL.Path, "/ripemd_160") {
+			hashing(w, r, ripemd.New160(), len("/ripemd160/"))
 			return
-		} else if r.URL.Path == "/ripemd256" || r.URL.Path == "/ripemd-256" || r.URL.Path == "/ripemd_256" {
-			hashing(w, r, ripemd.New256())
+		} else if strings.HasPrefix(r.URL.Path, "/ripemd256") || strings.HasPrefix(r.URL.Path, "/ripemd-256") || strings.HasPrefix(r.URL.Path, "/ripemd_256") {
+			hashing(w, r, ripemd.New256(), len("/ripemd256/"))
 			return
-		} else if r.URL.Path == "/ripemd320" || r.URL.Path == "/ripemd-320" || r.URL.Path == "/ripemd_320" {
-			hashing(w, r, ripemd.New320())
+		} else if strings.HasPrefix(r.URL.Path, "/ripemd320") || strings.HasPrefix(r.URL.Path, "/ripemd-320") || strings.HasPrefix(r.URL.Path, "/ripemd_320") {
+			hashing(w, r, ripemd.New320(), len("/ripemd320/"))
 			return
-		} else if r.URL.Path == "/blake224" || r.URL.Path == "/blake-224" || r.URL.Path == "/blake_224" {
-			hashing(w, r, blake.New224())
+		} else if strings.HasPrefix(r.URL.Path, "/blake224") || strings.HasPrefix(r.URL.Path, "/blake-224") || strings.HasPrefix(r.URL.Path, "/blake_224") {
+			hashing(w, r, blake.New224(), len("/blake224/"))
 			return
-		} else if r.URL.Path == "/blake256" || r.URL.Path == "/blake-256" || r.URL.Path == "/blake_256" {
-			hashing(w, r, blake.New())
+		} else if strings.HasPrefix(r.URL.Path, "/blake256") || strings.HasPrefix(r.URL.Path, "/blake-256") || strings.HasPrefix(r.URL.Path, "/blake_256") {
+			hashing(w, r, blake.New(), len("/blake256/"))
 			return
-		} else if r.URL.Path == "/blake384" || r.URL.Path == "/blake-384" || r.URL.Path == "/blake_384" {
-			hashing(w, r, blake.New384())
+		} else if strings.HasPrefix(r.URL.Path, "/blake384") || strings.HasPrefix(r.URL.Path, "/blake-384") || strings.HasPrefix(r.URL.Path, "/blake_384") {
+			hashing(w, r, b512.New384(), len("/blake384/"))
 			return
-		} else if r.URL.Path == "/blake512" || r.URL.Path == "/blake-512" || r.URL.Path == "/blake_512" {
-			hashing(w, r, blake.New512())
+		} else if strings.HasPrefix(r.URL.Path, "/blake512") || strings.HasPrefix(r.URL.Path, "/blake-512") || strings.HasPrefix(r.URL.Path, "/blake_512") {
+			hashing(w, r, b512.New(), len("/blake512/"))
 			return
 		} else {
 			http.Error(w, "Not found, or invalid algorithim", http.StatusNotFound)
@@ -163,37 +164,38 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func hashing(w http.ResponseWriter, r *http.Request, h hash.Hash, l int) {
+func hashing(w http.ResponseWriter, r *http.Request, m hash.Hash, l int) {
 	if r.Method == "GET" {
-		if r.URL.Path == "/md2" {
+		if !strings.HasSuffix(r.URL.Path[l-1:], "/") {
 			w.Header().Set("Content-Type", "text/plain")
 			w.WriteHeader(http.StatusOK)
-			m := md2.New()
-			m.Write(r.URL.Query().Get("data"))
+			m.Write([]byte(r.URL.Query().Get("data")))
 			w.Write([]byte(hex.EncodeToString(m.Sum(nil))))
 			return
 		} else {
-			if r.URL.Path == strings.HasSuffix(r.URL.Path, "/") {
+			if strings.HasSuffix(r.URL.Path[l-1:], "/") {
 				w.Header().Set("Content-Type", "text/plain")
 				w.WriteHeader(http.StatusOK)
-				m := md2.New()
-				m.Write("")
+				m.Write([]byte(""))
 				w.Write([]byte(hex.EncodeToString(m.Sum(nil))))
 				return
-			} else if strings.HasPrefix(r.URL.Path, "/md2/") {
+			} else if string(r.URL.Path[l-1]) == "/" && string(r.URL.Path[l:]) != "" {
 				w.Header().Set("Content-Type", "text/plain")
 				w.WriteHeader(http.StatusOK)
-				m := md2.New()
 				m.Write([]byte(r.URL.Path[l:]))
 				w.Write([]byte(hex.EncodeToString(m.Sum(nil))))
 				return
 			}
 		}
-	} else if r.Method == "POST" {
+	} else if r.Method == "POST" && r.URL.Path[l-1:] == "/" || r.URL.Path[l-1:] == "" {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
-		m := md2.New()
-		m.Write(r.Body)
+		content, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "Error reading body", http.StatusInternalServerError)
+			return
+		}
+		m.Write(content)
 		w.Write([]byte(hex.EncodeToString(m.Sum(nil))))
 		return
 	} else {
@@ -203,49 +205,8 @@ func hashing(w http.ResponseWriter, r *http.Request, h hash.Hash, l int) {
 }
 
 func main() {
-	address := flags.String("a", "127.0.0.1:3339", "Address to listen on, default is 127.0.0.1:3339")
-	flags.Parse()
-
-	//	md4 := md4.New()
-	//	md5 := md5.New()
-	//	sha1 := sha1.New()
-	//	sha2_224 := sha256.New224()
-	//	sha2_256 := sha256.New()
-	//	sha2_384 := sha512.New384()
-	//	sha2_512 := sha512.New()
-	//	sha2_512_224 := sha512.New512_224()
-	//	sha2_512_256 := sha512.New512_256()
-	//	sha3_224 := sha3.New224()
-	//	sha3_256 := sha3.New256()
-	//	sha3_384 := sha3.New384()
-	//	sha3_512 := sha3.New512()
-	//	sha3_shake128 := sha3.NewShake128()
-	//	sha3_shake256 := sha3.NewShake256()
-	//	adler32 := adler32.New()
-	//	crc32 := crc32.NewIEEE()
-	//	crc64_iso := crc64.New(crc64.MakeTable(crc64.ISO))
-	//	crc64_ecma := crc64.New(crc64.MakeTable(crc64.ECMA))
-	//	fnv32 := fnv.New32()
-	//	fnv32a := fnv.New32a()
-	//	fnv64 := fnv.New64()
-	//	fnv64a := fnv.New64a()
-	//	tiger := tigerpkg.New()
-	//	tiger2 := tigerpkg.New2()
-	//	whirlpool := whirlpool.New()
-	//	gost34112012256 := gost34112012256.New()
-	//	gost34112012512 := gost34112012512.New()
-	//	gost341194 := gost341194.New()
-	//	snefru256 := snefru.NewSnefru256()
-	//	snefru128 := snefru.NewSnefru128()
-	//	ripemd128 := ripemd.New128()
-	//	ripemd160 := ripemd.New160()
-	//	ripemd256 := ripemd.New256()
-	//	ripemd320 := ripemd.New320()
-	//	blake224 := blake.New224()
-	//	blake256 := blake.New()
-	//	blake384 := blake.New384()
-	//	blake512 := blake.New512()
-
+	address := flag.String("a", "127.0.0.1:3339", "Address to listen on, default is 127.0.0.1:3339")
+	flag.Parse()
 	http.HandleFunc("/", handler)
 	http.ListenAndServe(*address, nil)
 }
