@@ -1,3 +1,4 @@
+//go:build js && wasm
 // +build js,wasm
 
 package main
@@ -29,27 +30,27 @@ import (
 )
 
 func main() {
-    var input []byte
-    document := js.Global().Get("document")
-    tinput := document.Call("getElementById", "input").Get("value").String()
-    s := document.Call("getElementById", "algorithm").Get("value").String()
+	var input []byte
+	document := js.Global().Get("document")
+	tinput := document.Call("getElementById", "input").Get("value").String()
+	s := document.Call("getElementById", "algorithm").Get("value").String()
 
-    if document.Call("getElementById", "infile").Get("className") != "hidden" {
-        fileInput := document.Call("getElementById", "infile")
-        files := fileInput.Get("files")
-        if files.Length() > 0 {
-            file := files.Index(0)
-            reader := js.Global().Get("FileReader").New()
-            reader.Call("addEventListener", "load", js.FuncOf(func(this js.Value, p []js.Value) interface{} {
-                tinput = js.Global().Get("Uint8Array").New(reader.Get("result")).String()
-                input = []byte(tinput)
-                return nil
-            }))
-            reader.Call("readAsArrayBuffer", file)
-        }
-    } else {
-        input = []byte(tinput)
-    }
+	if document.Call("getElementById", "infile").Get("className").String() != "hidden" {
+		fileInput := document.Call("getElementById", "infile")
+		files := fileInput.Get("files")
+		if files.Length() > 0 {
+			file := files.Index(0)
+			reader := js.Global().Get("FileReader").New()
+			reader.Call("addEventListener", "load", js.FuncOf(func(this js.Value, p []js.Value) interface{} {
+				tinput = js.Global().Get("Uint8Array").New(reader.Get("result")).String()
+				input = []byte(tinput)
+				return nil
+			}))
+			reader.Call("readAsArrayBuffer", file)
+		}
+	} else {
+		input = []byte(tinput)
+	}
 	if s == "md2" {
 		h := md2.New()
 		h.Write([]byte(input))
