@@ -1,3 +1,5 @@
+// +build js,wasm
+
 package main
 
 import (
@@ -23,13 +25,31 @@ import (
 	blake "github.com/pedroalbanese/blake256"
 	"golang.org/x/crypto/md4"
 	"golang.org/x/crypto/sha3"
-	// js "github.com/inkeliz/go_inkwasm"
+	// js "github.com/inkeliz/go_inkwasm/inkwasm"
 )
 
 func main() {
-	document := js.Global().Get("document")
-	input := document.Call("getElementById", "input").Get("value").String()
-	s := document.Call("getElementById", "algorithm").Get("value").String()
+    var input []byte
+    document := js.Global().Get("document")
+    tinput := document.Call("getElementById", "input").Get("value").String()
+    s := document.Call("getElementById", "algorithm").Get("value").String()
+
+    if document.Call("getElementById", "infile").Get("className") != "hidden" {
+        fileInput := document.Call("getElementById", "infile")
+        files := fileInput.Get("files")
+        if files.Length() > 0 {
+            file := files.Index(0)
+            reader := js.Global().Get("FileReader").New()
+            reader.Call("addEventListener", "load", js.FuncOf(func(this js.Value, p []js.Value) interface{} {
+                tinput = js.Global().Get("Uint8Array").New(reader.Get("result")).String()
+                input = []byte(tinput)
+                return nil
+            }))
+            reader.Call("readAsArrayBuffer", file)
+        }
+    } else {
+        input = []byte(tinput)
+    }
 	if s == "md2" {
 		h := md2.New()
 		h.Write([]byte(input))
@@ -46,27 +66,27 @@ func main() {
 		h := sha1.New()
 		h.Write([]byte(input))
 		js.Global().Get("document").Call("getElementById", "output").Set("value", hex.EncodeToString(h.Sum(nil)))
-	} else if s == "sha224" || s == "sha2_224" || s == "sha2-224" {
+	} else if s == "sha2_224" || s == "sha224" || s == "sha2-224" {
 		h := sha256.New224()
 		h.Write([]byte(input))
 		js.Global().Get("document").Call("getElementById", "output").Set("value", hex.EncodeToString(h.Sum(nil)))
-	} else if s == "sha256" || s == "sha2_256" || s == "sha2-256" {
+	} else if s == "sha2_256" || s == "sha256" || s == "sha2-256" {
 		h := sha256.New()
 		h.Write([]byte(input))
 		js.Global().Get("document").Call("getElementById", "output").Set("value", hex.EncodeToString(h.Sum(nil)))
-	} else if s == "sha384" || s == "sha2_384" || s == "sha2-384" {
+	} else if s == "sha2_384" || s == "sha384" || s == "sha2-384" {
 		h := sha512.New384()
 		h.Write([]byte(input))
 		js.Global().Get("document").Call("getElementById", "output").Set("value", hex.EncodeToString(h.Sum(nil)))
-	} else if s == "sha512" || s == "sha2_512" || s == "sha2-512" {
+	} else if s == "sha2_512" || s == "sha512" || s == "sha2-512" {
 		h := sha512.New()
 		h.Write([]byte(input))
 		js.Global().Get("document").Call("getElementById", "output").Set("value", hex.EncodeToString(h.Sum(nil)))
-	} else if s == "sha512_224" || s == "sha2_512_224" || s == "sha2-512-224" {
+	} else if s == "sha2_512_224" || s == "sha512_224" || s == "sha2-512-224" {
 		h := sha512.New512_224()
 		h.Write([]byte(input))
 		js.Global().Get("document").Call("getElementById", "output").Set("value", hex.EncodeToString(h.Sum(nil)))
-	} else if s == "sha512_256" || s == "sha2_512_256" || s == "sha2-512-256" {
+	} else if s == "sha2_512_256" || s == "sha512_256" || s == "sha2-512-256" {
 		h := sha512.New512_256()
 		h.Write([]byte(input))
 		js.Global().Get("document").Call("getElementById", "output").Set("value", hex.EncodeToString(h.Sum(nil)))
@@ -125,20 +145,16 @@ func main() {
 		h := fnv.New64a()
 		h.Write([]byte(input))
 		js.Global().Get("document").Call("getElementById", "output").Set("value", hex.EncodeToString(h.Sum(nil)))
-	} else if s == "fnv128" {
-		h := fnv.New128()
-		h.Write([]byte(input))
-		js.Global().Get("document").Call("getElementById", "output").Set("value", hex.EncodeToString(h.Sum(nil)))
-	} else if s == "fnv128a" {
-		h := fnv.New128a()
-		h.Write([]byte(input))
-		js.Global().Get("document").Call("getElementById", "output").Set("value", hex.EncodeToString(h.Sum(nil)))
 	} else if s == "tiger" {
 		h := tiger.New()
 		h.Write([]byte(input))
 		js.Global().Get("document").Call("getElementById", "output").Set("value", hex.EncodeToString(h.Sum(nil)))
-	} else if s == "snefru" {
-		h := snefru.New()
+	} else if s == "tiger2" {
+		h := tiger.New2()
+		h.Write([]byte(input))
+		js.Global().Get("document").Call("getElementById", "output").Set("value", hex.EncodeToString(h.Sum(nil)))
+	} else if s == "whirlpool" {
+		h := whirlpool.New()
 		h.Write([]byte(input))
 		js.Global().Get("document").Call("getElementById", "output").Set("value", hex.EncodeToString(h.Sum(nil)))
 	} else if s == "gost34112012256" {
@@ -149,8 +165,12 @@ func main() {
 		h := gost34112012512.New()
 		h.Write([]byte(input))
 		js.Global().Get("document").Call("getElementById", "output").Set("value", hex.EncodeToString(h.Sum(nil)))
-	} else if s == "whirlpool" {
-		h := whirlpool.New()
+	} else if s == "snefru256" || s == "snefru" {
+		h := snefru.NewSnefru256(16)
+		h.Write([]byte(input))
+		js.Global().Get("document").Call("getElementById", "output").Set("value", hex.EncodeToString(h.Sum(nil)))
+	} else if s == "snefru128" {
+		h := snefru.NewSnefru128(16)
 		h.Write([]byte(input))
 		js.Global().Get("document").Call("getElementById", "output").Set("value", hex.EncodeToString(h.Sum(nil)))
 	} else if s == "ripemd128" {
@@ -169,23 +189,22 @@ func main() {
 		h := ripemd.New320()
 		h.Write([]byte(input))
 		js.Global().Get("document").Call("getElementById", "output").Set("value", hex.EncodeToString(h.Sum(nil)))
-	} else if s == "blake256" {
-		h := blake.New()
-		h.Write([]byte(input))
-		js.Global().Get("document").Call("getElementById", "output").Set("value", hex.EncodeToString(h.Sum(nil)))
-	} else if s == "blake512" {
-		h := b512.New()
-		h.Write([]byte(input))
-		js.Global().Get("document").Call("getElementById", "output").Set("value", hex.EncodeToString(h.Sum(nil)))
 	} else if s == "blake224" {
 		h := blake.New224()
+		h.Write([]byte(input))
+		js.Global().Get("document").Call("getElementById", "output").Set("value", hex.EncodeToString(h.Sum(nil)))
+	} else if s == "blake256" {
+		h := blake.New()
 		h.Write([]byte(input))
 		js.Global().Get("document").Call("getElementById", "output").Set("value", hex.EncodeToString(h.Sum(nil)))
 	} else if s == "blake384" {
 		h := b512.New384()
 		h.Write([]byte(input))
 		js.Global().Get("document").Call("getElementById", "output").Set("value", hex.EncodeToString(h.Sum(nil)))
+	} else if s == "blake512" {
+		h := b512.New()
+		h.Write([]byte(input))
+		js.Global().Get("document").Call("getElementById", "output").Set("value", hex.EncodeToString(h.Sum(nil)))
 	}
-
-
+	return
 }

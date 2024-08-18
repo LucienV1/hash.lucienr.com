@@ -12,22 +12,22 @@ import (
 	"hash/crc32"
 	"hash/crc64"
 	"hash/fnv"
+	"io"
 	"net/http"
 	"strings"
-	"io"
 
 	"github.com/attilabuti/go-snefru"
 	"github.com/cxmcc/tiger"
 	"github.com/ddulesov/gogost/gost34112012256"
 	"github.com/ddulesov/gogost/gost34112012512"
 
+	b512 "github.com/dchest/blake512"
 	"github.com/htruong/go-md2"
 	"github.com/jzelinskie/whirlpool"
 	"github.com/maoxs2/go-ripemd"
 	blake "github.com/pedroalbanese/blake256"
 	"golang.org/x/crypto/md4"
 	"golang.org/x/crypto/sha3"
-	b512 "github.com/dchest/blake512"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -37,7 +37,47 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	} else if r.URL.Path == "/" && r.Method == "GET" {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/html")
-		w.Write([]byte(`<!DOCTYPE html><html><head></head><body><p>PLACEHOLDER</p></body></html>`))
+		w.Write([]byte(`<!doctypehtml><title>online hashing</title><style>.famfamfam-mini{background:url(https://raw.githubusercontent.com/legacy-icons/famfamfam-mini/master/dist/sprite/famfamfam-mini.png) no-repeat;background-size:192px 192px}.famfamfam-mini.action_refresh{width:16px;height:16px;background-position:-32px -16px}.hidden{display:none}.point{cursor:pointer}</style><p>Input:<div><input id=textRadio name=inputType type=radio value=text checked> <label for=textRadio>Text</label> <input id=fileRadio name=inputType type=radio value=file> <label for=fileRadio>File</label></div><div id=intext><p><textarea cols=50 id=input rows=4></textarea><p class="action_refresh famfamfam-mini point"onclick='document.getElementById("input").value=""'></div><div id=infile><p><input id=file name=file type=file><p class="action_refresh famfamfam-mini point"onclick='document.getElementById("file").value=""'></div><script>document.addEventListener('DOMContentLoaded', function() {
+            const textRadio = document.getElementById('textRadio');
+            const fileRadio = document.getElementById('fileRadio');
+            const intext = document.getElementById('intext');
+            const infile = document.getElementById('infile');
+            const textArea = document.getElementById('input');
+            const fileInput = document.getElementById('file');
+
+            function toggleVisibility() {
+                if (textRadio.checked) {
+                    intext.classList.remove('hidden');
+                    infile.classList.add('hidden');
+                } else if (fileRadio.checked) {
+                    intext.classList.add('hidden');
+                    infile.classList.remove('hidden');
+                }
+            }
+
+            async function loadWasm() {
+                const response = await fetch('https://cdn.` + r.Host + `/h.wasm');
+                const buffer = await response.arrayBuffer();
+                const wasmModule = await WebAssembly.instantiate(buffer);
+                return wasmModule.instance.exports;
+            }
+
+            async function runWasm() {
+                const wasmExports = await loadWasm();
+                if (wasmExports && wasmExports.main) {
+                    wasmExports.main();
+                }
+            }
+
+            textArea.addEventListener('input', runWasm);
+            fileInput.addEventListener('change', runWasm);
+
+            textRadio.addEventListener('change', toggleVisibility);
+            fileRadio.addEventListener('change', toggleVisibility);
+
+            // Initial call to set the correct visibility on page load
+            toggleVisibility();
+        });</script><p>Output:</p><textarea cols=50 id=output rows=4></textarea><p><select id=algorithm><option value=md2>MD2<option value=md4>MD4<option value=md5>MD5<option value=sha1>SHA-1<option value=sha2_224>SHA-2 224<option value=sha2_256>SHA-2 256<option value=sha2_384>SHA-2 384<option value=sha2_512>SHA-2 512<option value=sha2_512_224>SHA-2 512/224<option value=sha2_512_256>SHA-2 512/256<option value=sha3_224>SHA-3 224<option value=sha3_256>SHA-3 256<option value=sha3_384>SHA-3 384<option value=sha3_512>SHA-3 512<option value=sha3_shake128>SHA-3 Shake128<option value=sha3_shake256>SHA-3 Shake256<option value=adler32>Adler-32<option value=crc32>CRC-32<option value=crc64_iso>CRC-64 ISO<option value=crc64_ecma>CRC-64 ECMA<option value=fnv32>FNV-32<option value=fnv32a>FNV-32a<option value=fnv64>FNV-64<option value=fnv64a>FNV-64a<option value=tiger>Tiger<option value=tiger2>Tiger2<option value=whirlpool>Whirlpool<option value=gost34112012256>GOST 3411-2012 256<option value=gost34112012512>GOST 3411-2012 512<option value=snefru256>Snefru-256<option value=snefru128>Snefru-128<option value=ripemd128>RIPEMD-128<option value=ripemd160>RIPEMD-160<option value=ripemd256>RIPEMD-256<option value=ripemd320>RIPEMD-320<option value=blake224>BLAKE-224<option value=blake256>BLAKE-256<option value=blake384>BLAKE-384<option value=blake512>BLAKE-512</select>`))
 		return
 	} else {
 		if strings.HasPrefix(r.URL.Path, "/md2") {
@@ -52,7 +92,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		} else if strings.HasPrefix(r.URL.Path, "/sha1") {
 			hashing(w, r, sha1.New(), len("/sha1/"))
 			return
-				} else if strings.HasPrefix(r.URL.Path, "/sha224") || strings.HasPrefix(r.URL.Path, "/sha2_224") || strings.HasPrefix(r.URL.Path, "/sha2-224") {
+		} else if strings.HasPrefix(r.URL.Path, "/sha224") || strings.HasPrefix(r.URL.Path, "/sha2_224") || strings.HasPrefix(r.URL.Path, "/sha2-224") {
 			hashing(w, r, sha256.New224(), len("/sha224/"))
 			return
 		} else if strings.HasPrefix(r.URL.Path, "/sha256") || strings.HasPrefix(r.URL.Path, "/sha2_256") || strings.HasPrefix(r.URL.Path, "/sha2-256") {
