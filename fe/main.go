@@ -2,29 +2,31 @@
 // +build js,wasm
 
 package main
+
 import (
-"crypto/md5"
-"crypto/sha1"
-"crypto/sha256"
-"crypto/sha512"
-"encoding/hex"
-"hash/adler32"
-"hash/crc32"
-"hash/crc64"
-"hash/fnv"
-"github.com/attilabuti/go-snefru"
-"github.com/cxmcc/tiger"
-b512 "github.com/dchest/blake512"
-"github.com/ddulesov/gogost/gost34112012256"
-"github.com/ddulesov/gogost/gost34112012512"
-"github.com/htruong/go-md2"
-"github.com/jzelinskie/whirlpool"
-"github.com/maoxs2/go-ripemd"
-blake "github.com/pedroalbanese/blake256"
-"golang.org/x/crypto/md4"
-"golang.org/x/crypto/sha3"
+	"crypto/md5"
+	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/sha512"
+	"encoding/hex"
+	"hash/adler32"
+	"hash/crc32"
+	"hash/crc64"
+	"hash/fnv"
+
+	"github.com/attilabuti/go-snefru"
+	"github.com/cxmcc/tiger"
+	b512 "github.com/dchest/blake512"
+	"github.com/ddulesov/gogost/gost34112012256"
+	"github.com/ddulesov/gogost/gost34112012512"
+	"github.com/htruong/go-md2"
+	"github.com/jzelinskie/whirlpool"
+	"github.com/maoxs2/go-ripemd"
+	blake "github.com/pedroalbanese/blake256"
+	"golang.org/x/crypto/md4"
+	"golang.org/x/crypto/sha3"
 )
-func processInput(input []byte, s string) string {
+func ProcessInput(input []byte, s string) string {
 if s == "md2" {
 h := md2.New()
 h.Write([]byte(input))
@@ -183,4 +185,7 @@ h.Write([]byte(input))
 return hex.EncodeToString(h.Sum(nil))
 }
 return ""
+}
+func main() {
+	return
 }

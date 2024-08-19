@@ -46,6 +46,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
     <meta name"og:title" content="Online hashing">
     <meta name="og:description" content="Online hashing">
     <meta name="og:type" content="website">
+	<meta name="favicon" content="https://cdn.` + r.Host + `/page.ico">
 <title>online hashing</title>
 <style>
     .famfamfam-mini {
