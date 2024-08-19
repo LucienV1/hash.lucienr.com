@@ -37,47 +37,174 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	} else if r.URL.Path == "/" && r.Method == "GET" {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/html")
-		w.Write([]byte(`<!DOCTYPE html><title>online hashing</title><style>.famfamfam-mini{background:url(https://raw.githubusercontent.com/legacy-icons/famfamfam-mini/master/dist/sprite/famfamfam-mini.png) no-repeat;background-size:192px 192px}.famfamfam-mini.action_refresh{width:16px;height:16px;background-position:-32px -16px}.hidden{display:none}.point{cursor:pointer}</style><p>Input:<div><input id=textRadio name=inputType type=radio value=text checked> <label for=textRadio>Text</label> <input id=fileRadio name=inputType type=radio value=file> <label for=fileRadio>File</label></div><div id=intext><p><textarea cols=50 id=input rows=4></textarea><p class="action_refresh famfamfam-mini point"onclick='document.getElementById("input").value=""'></div><div id=infile><p><input id=file name=file type=file><p class="action_refresh famfamfam-mini point"onclick='document.getElementById("file").value=""'></div><script>document.addEventListener('DOMContentLoaded', function() {
-            const textRadio = document.getElementById('textRadio');
-            const fileRadio = document.getElementById('fileRadio');
-            const intext = document.getElementById('intext');
-            const infile = document.getElementById('infile');
-            const textArea = document.getElementById('input');
-            const fileInput = document.getElementById('file');
+		w.Write([]byte(`<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Online hashing">
+    <meta name="keywords" content="hashing, online, webassembly">
+    <meta name"og:title" content="Online hashing">
+    <meta name="og:description" content="Online hashing">
+    <meta name="og:type" content="website">
+<title>online hashing</title>
+<style>
+    .famfamfam-mini {
+        background: url(https://raw.githubusercontent.com/legacy-icons/famfamfam-mini/master/dist/sprite/famfamfam-mini.png) no-repeat;
+        background-size: 192px 192px
+    }
 
-            function toggleVisibility() {
+    .famfamfam-mini.action_refresh {
+        width: 16px;
+        height: 16px;
+        background-position: -32px -16px
+    }
+
+    .hidden {
+        display: none
+    }
+
+    .point {
+        cursor: pointer
+    }
+</style>
+</head>
+<body>
+<p>Input:</p>
+<div>
+    <input id="textRadio" name="inputType" type="radio" value="text" checked>
+    <label for="textRadio">Text</label>
+    <input id="fileRadio" name="inputType" type="radio" value="file">
+    <label for="fileRadio">File</label>
+</div>
+<div id="intext">
+    <p><textarea cols="50" id="input" rows="4"></textarea></p>
+    <p class="point famfamfam-mini action_refresh" onclick="document.getElementById('input').value = '';"></p>
+</div>
+<div id="infile" class="hidden">
+    <p><input type="file" id="file" name="file"></p>
+    <p class="point famfamfam-mini action_refresh" onclick="document.getElementById('file').value = '';"></p>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const textRadio = document.getElementById('textRadio');
+        const fileRadio = document.getElementById('fileRadio');
+        const intext = document.getElementById('intext');
+        const infile = document.getElementById('infile');
+        const textArea = document.getElementById('input');
+        const fileInput = document.getElementById('file');
+        const algorithmSelect = document.getElementById('algorithm');
+
+        function toggleVisibility() {
+            if (textRadio.checked) {
+                intext.classList.remove('hidden');
+                infile.classList.add('hidden');
+            } else if (fileRadio.checked) {
+                intext.classList.add('hidden');
+                infile.classList.remove('hidden');
+            }
+        }
+
+        // Set initial state
+        textRadio.checked = true;
+        fileRadio.checked = false;
+        intext.classList.remove('hidden');
+        infile.classList.add('hidden');
+
+        textRadio.addEventListener('change', toggleVisibility);
+        fileRadio.addEventListener('change', toggleVisibility);
+
+        async function loadWasm() {
+            const response = await fetch('https://cdn.example.com/h.wasm');
+            const buffer = await response.arrayBuffer();
+            const wasmModule = await WebAssembly.instantiate(buffer);
+            return wasmModule.instance.exports;
+        }
+
+        // Load the WebAssembly module
+        loadWasm().then(wasmExports => {
+            textArea.addEventListener('input', function () {
                 if (textRadio.checked) {
-                    intext.classList.remove('hidden');
-                    infile.classList.add('hidden');
+                    wasmExports.ProcessInput(textArea.value, algorithmSelect.value);
+                }
+            });
+
+            algorithmSelect.addEventListener('change', function () {
+                if (textRadio.checked) {
+                    wasmExports.ProcessInput(textArea.value, algorithmSelect.value);
                 } else if (fileRadio.checked) {
-                    intext.classList.add('hidden');
-                    infile.classList.remove('hidden');
+                    const file = fileInput.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function (event) {
+                            const arrayBuffer = event.target.result;
+                            const uint8Array = new Uint8Array(arrayBuffer);
+                            wasmExports.ProcessInput(uint8Array, algorithmSelect.value);
+                        };
+                        reader.readAsArrayBuffer(file);
+                    }
                 }
-            }
+            });
 
-            async function loadWasm() {
-                const response = await fetch('https://cdn.` + r.Host + `/h.wasm');
-                const buffer = await response.arrayBuffer();
-                const wasmModule = await WebAssembly.instantiate(buffer);
-                return wasmModule.instance.exports;
-            }
-
-            async function runWasm() {
-                const wasmExports = await loadWasm();
-                if (wasmExports && wasmExports.main) {
-                    wasmExports.main();
+            fileInput.addEventListener('change', function () {
+                const file = fileInput.files[0];
+                if (file && fileRadio.checked) {
+                    const reader = new FileReader();
+                    reader.onload = function (event) {
+                        const arrayBuffer = event.target.result;
+                        const uint8Array = new Uint8Array(arrayBuffer);
+                        wasmExports.ProcessInput(uint8Array, algorithmSelect.value);
+                    };
+                    reader.readAsArrayBuffer(file);
                 }
-            }
+            });
+        }).catch(console.error);
+    });
+</script>
+<p>Output:</p><textarea cols=50 id=output rows=4></textarea></p>
+<p><select id=algorithm>
+        <option value=md2>MD2</option>
+        <option value=md4>MD4</option>
+        <option value=md5>MD5</option>
+        <option value=sha1>SHA-1</option>
+        <option value=sha2_224>SHA-2 224</option>
+        <option value=sha2_256>SHA-2 256</option>
+        <option value=sha2_384>SHA-2 384</option>
+        <option value=sha2_512>SHA-2 512</option>
+        <option value=sha2_512_224>SHA-2 512/224</option>
+        <option value=sha2_512_256>SHA-2 512/256</option>
+        <option value=sha3_224>SHA-3 224</option>
+        <option value=sha3_256>SHA-3 256</option>
+        <option value=sha3_384>SHA-3 384</option>
+        <option value=sha3_512>SHA-3 512</option>
+        <option value=sha3_shake128>SHA-3 Shake128</option>
+        <option value=sha3_shake256>SHA-3 Shake256</option>
+        <option value=adler32>Adler-32</option>
+        <option value=crc32>CRC-32</option>
+        <option value=crc64_iso>CRC-64 ISO</option>
+        <option value=crc64_ecma>CRC-64 ECMA</option>
+        <option value=fnv32>FNV-32</option>
+        <option value=fnv32a>FNV-32a</option>
+        <option value=fnv64>FNV-64</option>
+        <option value=fnv64a>FNV-64a</option>
+        <option value=tiger>Tiger</option>
+        <option value=tiger2>Tiger2</option>
+        <option value=whirlpool>Whirlpool</option>
+        <option value=gost34112012256>GOST 3411-2012 256</option>
+        <option value=gost34112012512>GOST 3411-2012 512</option>
+        <option value=snefru256>Snefru-256</option>
+        <option value=snefru128>Snefru-128</option>
+        <option value=ripemd128>RIPEMD-128</option>
+        <option value=ripemd160>RIPEMD-160</option>
+        <option value=ripemd256>RIPEMD-256</option>
+        <option value=ripemd320>RIPEMD-320</option>
+        <option value=blake224>BLAKE-224</option>
+        <option value=blake256>BLAKE-256</option>
+        <option value=blake384>BLAKE-384</option>
+        <option value=blake512>BLAKE-512</option>
+    </select></p>
+</body>
 
-            textArea.addEventListener('input', runWasm);
-            fileInput.addEventListener('change', runWasm);
-
-            textRadio.addEventListener('change', toggleVisibility);
-            fileRadio.addEventListener('change', toggleVisibility);
-
-            // Initial call to set the correct visibility on page load
-            toggleVisibility();
-        });</script><p>Output:</p><textarea cols=50 id=output rows=4></textarea><p><select id=algorithm><option value=md2>MD2<option value=md4>MD4<option value=md5>MD5<option value=sha1>SHA-1<option value=sha2_224>SHA-2 224<option value=sha2_256>SHA-2 256<option value=sha2_384>SHA-2 384<option value=sha2_512>SHA-2 512<option value=sha2_512_224>SHA-2 512/224<option value=sha2_512_256>SHA-2 512/256<option value=sha3_224>SHA-3 224<option value=sha3_256>SHA-3 256<option value=sha3_384>SHA-3 384<option value=sha3_512>SHA-3 512<option value=sha3_shake128>SHA-3 Shake128<option value=sha3_shake256>SHA-3 Shake256<option value=adler32>Adler-32<option value=crc32>CRC-32<option value=crc64_iso>CRC-64 ISO<option value=crc64_ecma>CRC-64 ECMA<option value=fnv32>FNV-32<option value=fnv32a>FNV-32a<option value=fnv64>FNV-64<option value=fnv64a>FNV-64a<option value=tiger>Tiger<option value=tiger2>Tiger2<option value=whirlpool>Whirlpool<option value=gost34112012256>GOST 3411-2012 256<option value=gost34112012512>GOST 3411-2012 512<option value=snefru256>Snefru-256<option value=snefru128>Snefru-128<option value=ripemd128>RIPEMD-128<option value=ripemd160>RIPEMD-160<option value=ripemd256>RIPEMD-256<option value=ripemd320>RIPEMD-320<option value=blake224>BLAKE-224<option value=blake256>BLAKE-256<option value=blake384>BLAKE-384<option value=blake512>BLAKE-512</select>`))
+</html>`))
 		return
 	} else {
 		if strings.HasPrefix(r.URL.Path, "/md2") {
