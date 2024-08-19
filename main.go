@@ -114,7 +114,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
         fileRadio.addEventListener('change', toggleVisibility);
 
         async function loadWasm() {
-            const response = await fetch('https://cdn.example.com/h.wasm');
+            const response = await fetch('https://cdn.` + r.Host + `/h.wasm');
             const buffer = await response.arrayBuffer();
             const wasmModule = await WebAssembly.instantiate(buffer);
             return wasmModule.instance.exports;
