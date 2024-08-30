@@ -85,82 +85,92 @@ func handler(w http.ResponseWriter, r *http.Request) {
     <p><input type="file" id="file" name="file"></p>
     <p class="point famfamfam-mini action_refresh" onclick="document.getElementById('file').value = '';"></p>
 </div>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const textRadio = document.getElementById('textRadio');
-        const fileRadio = document.getElementById('fileRadio');
-        const intext = document.getElementById('intext');
-        const infile = document.getElementById('infile');
-        const textArea = document.getElementById('input');
-        const fileInput = document.getElementById('file');
-        const algorithmSelect = document.getElementById('algorithm');
+<script src="https://cdn.jsdelivr.net/gh/golang/go@go1.22.2/misc/wasm/wasm_exec.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const textRadio = document.getElementById('textRadio');
+            const fileRadio = document.getElementById('fileRadio');
+            const intext = document.getElementById('intext');
+            const infile = document.getElementById('infile');
+            const textArea = document.getElementById('input');
+            const fileInput = document.getElementById('file');
+            const algorithmSelect = document.getElementById('algorithm');
 
-        function toggleVisibility() {
-            if (textRadio.checked) {
-                intext.classList.remove('hidden');
-                infile.classList.add('hidden');
-            } else if (fileRadio.checked) {
-                intext.classList.add('hidden');
-                infile.classList.remove('hidden');
-            }
-        }
-
-        // Set initial state
-        textRadio.checked = true;
-        fileRadio.checked = false;
-        intext.classList.remove('hidden');
-        infile.classList.add('hidden');
-
-        textRadio.addEventListener('change', toggleVisibility);
-        fileRadio.addEventListener('change', toggleVisibility);
-
-        async function loadWasm() {
-            const response = await fetch('https://cdn.` + r.Host + `/h.wasm');
-            const buffer = await response.arrayBuffer();
-            const wasmModule = await WebAssembly.instantiate(buffer);
-            return wasmModule.instance.exports;
-        }
-
-        // Load the WebAssembly module
-        loadWasm().then(wasmExports => {
-            textArea.addEventListener('input', function () {
+            function toggleVisibility() {
                 if (textRadio.checked) {
-                    wasmExports.ProcessInput(textArea.value, algorithmSelect.value);
-                }
-            });
-
-            algorithmSelect.addEventListener('change', function () {
-                if (textRadio.checked) {
-                    wasmExports.ProcessInput(textArea.value, algorithmSelect.value);
+                    intext.classList.remove('hidden');
+                    infile.classList.add('hidden');
                 } else if (fileRadio.checked) {
+                    intext.classList.add('hidden');
+                    infile.classList.remove('hidden');
+                }
+            }
+
+            textRadio.checked = true;
+            fileRadio.checked = false;
+            intext.classList.remove('hidden');
+            infile.classList.add('hidden');
+
+            textRadio.addEventListener('change', toggleVisibility);
+            fileRadio.addEventListener('change', toggleVisibility);
+
+            const go = new Go();
+
+            async function loadWasm() {
+                const response = await fetch('https://cdn.` + r.Host + `/h.wasm');
+                const buffer = await response.arrayBuffer();
+                const wasmModule = await WebAssembly.instantiate(buffer, go.importObject);
+                go.run(wasmModule.instance);
+                return wasmModule.instance.exports;
+            }
+
+            loadWasm().then(wasmExports => {
+                textArea.addEventListener('input', function () {
+                    if (textRadio.checked) {
+                        const input = new TextEncoder().encode(textArea.value);
+                        const result = wasmExports.ProcessInput(input, algorithmSelect.value);
+                        document.getElementById('output').value = new TextDecoder().decode(result);
+                    }
+                });
+
+                algorithmSelect.addEventListener('change', function () {
+                    if (textRadio.checked) {
+                        const input = new TextEncoder().encode(textArea.value);
+                        const result = wasmExports.ProcessInput(input, algorithmSelect.value);
+                        document.getElementById('output').value = new TextDecoder().decode(result);
+                    } else if (fileRadio.checked) {
+                        const file = fileInput.files[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = function (event) {
+                                const arrayBuffer = event.target.result;
+                                const uint8Array = new Uint8Array(arrayBuffer);
+                                const result = wasmExports.ProcessInput(uint8Array, algorithmSelect.value);
+                                document.getElementById('output').value = new TextDecoder().decode(result);
+                            };
+                            reader.readAsArrayBuffer(file);
+                        }
+                    }
+                });
+
+                fileInput.addEventListener('change', function () {
                     const file = fileInput.files[0];
-                    if (file) {
+                    if (file && fileRadio.checked) {
                         const reader = new FileReader();
                         reader.onload = function (event) {
                             const arrayBuffer = event.target.result;
                             const uint8Array = new Uint8Array(arrayBuffer);
-                            wasmExports.ProcessInput(uint8Array, algorithmSelect.value);
+                            const result = wasmExports.ProcessInput(uint8Array, algorithmSelect.value);
+                            document.getElementById('output').value = new TextDecoder().decode(result);
                         };
                         reader.readAsArrayBuffer(file);
                     }
-                }
-            });
-
-            fileInput.addEventListener('change', function () {
-                const file = fileInput.files[0];
-                if (file && fileRadio.checked) {
-                    const reader = new FileReader();
-                    reader.onload = function (event) {
-                        const arrayBuffer = event.target.result;
-                        const uint8Array = new Uint8Array(arrayBuffer);
-                        wasmExports.ProcessInput(uint8Array, algorithmSelect.value);
-                    };
-                    reader.readAsArrayBuffer(file);
-                }
-            });
-        }).catch(console.error);
-    });
-</script>
+                });
+            }).catch(console.error);
+        });
+    </script>
+</body>
+</html>
 <p>Output:</p><textarea cols=50 id=output rows=4></textarea></p>
 <p><select id=algorithm>
         <option value=md2>MD2</option>
